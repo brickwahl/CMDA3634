@@ -193,7 +193,9 @@ void ElGamalDecrypt(unsigned int *m, unsigned int *a, unsigned int Nints,
 void padString(unsigned char* string, unsigned int charsPerInt) {
 
   /* Q1.2 Complete this function   */
-
+     while(strlen(string)%charsPerInt != 0 ) {
+          strcat(string," ");
+     }
 }
 
 
@@ -202,7 +204,11 @@ void convertStringToZ(unsigned char *string, unsigned int Nchars,
 
   /* Q1.3 Complete this function   */
   /* Q2.2 Parallelize this function with OpenMP   */
-
+     unsigned int charperint = Nchars/Nints;
+     #pragma omp parallel for shared(Z)
+     for (unsigned int x = 0; x < Nchars; x++) {
+          Z[x/charperint] = Z[x/charperint] | (string[x]<<((charperint-1-x%charperint)*9));
+     }
 }
 
 
@@ -211,6 +217,10 @@ void convertZToString(unsigned int  *Z,      unsigned int Nints,
 
   /* Q1.4 Complete this function   */
   /* Q2.2 Parallelize this function with OpenMP   */
-
+     unsigned int charperint = Nchars/Nints;
+     #pragma omp parallel for shared(string)
+     for (int x = 0; x < Nchars; x++) {
+          string[x] = (unsigned char) (Z[x/charperint]>>(9*(charperint-1-x%charperint)));
+     }
 }
 
