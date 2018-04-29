@@ -58,7 +58,7 @@ int main (int argc, char **argv) {
 
   FILE *mes;
   if ((mes = fopen("message.txt", "w+")) == NULL) {
-    printf("There was an error.")
+    printf("There was an error.");
     exit(1);
   }
 

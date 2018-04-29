@@ -81,7 +81,7 @@ int main (int argc, char **argv) {
   unsigned int charsPerInt = (int) ((n - 1)/8);
   unsigned int Nchars = (Nints * charsPerInt);
 
-  convertZtoString(m, Nints, message, Nchars);
+  convertZToString(m, Nints, message, Nchars);
   printf("Decrypted message = \"%s\"\n", message);
   return 0;
 }
