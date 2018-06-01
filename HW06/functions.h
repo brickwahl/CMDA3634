@@ -35,8 +35,7 @@ void ElGamalEncrypt(ulong *m, ulong *a, unsigned int Nints,
 
 //decryp a number *m using ElGamal using the coefficent
 //  *a and the secret key x.
-void ElGamalDecrypt(ulong *m, ulong *a, unsigned int Nints,
-                    ulong p, ulong x);
+void ElGamalDecrypt(ulong *m, ulong *a, unsigned int Nints, ulong p, ulong x);
 
 
 //Pad the end of string so its length is divisible by Nchars

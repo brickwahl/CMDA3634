@@ -53,19 +53,29 @@ int main (int argc, char **argv) {
   char stat = scanf("%llu",&x);
 
   
-  // find the secret key
-  if (x==0 || modExp(g,x,p)!=h) {
-    printf("Finding the secret key...\n");
-
-    unsigned int M; //giant step
-    
-    double startTime = clock();
-    for (unsigned int i=0;i<p-1;i++) {
-      if (modExp(g,i+1,p)==h) {
-        printf("Secret key found! x = %u \n", i+1);
-        x=i+1;
-      } 
+    unsigned int M = sqrt(p); //giant step
+    keyValuePair *G = malloc(M*sizeof(keyValuePair)); //declaring and allocating memory for array
+ 
+    for (unsigned int i=1; i<=M; i++) {
+      G[i].value = i;
+      G[i].key = g^i;
     }
+
+    qsort(G, M, sizeof(keyValuePair), compareValue);
+
+  // find the secret key
+//  if (x==0 || modExp(g,x,p)!=h) {
+//    printf("Finding the secret key...\n");
+//    double startTime = clock();
+//    for (unsigned int i=0;i<p-1;i++) {
+//      if (modExp(g,i+1,p)==h) {
+//        printf("Secret key found! x = %u \n", i+1);
+//        x=i+1;
+//      } 
+//    }
+    printf("%u ---- %llu", G[1].key, G[1].value);
+    printf("%u ---- %llu", G[M].key, G[M].value);
+
     double endTime = clock();
 
     double totalTime = (endTime-startTime)/CLOCKS_PER_SEC;
@@ -73,7 +83,6 @@ int main (int argc, char **argv) {
     double throughput = work/totalTime;
 
     printf("Searching all keys took %g seconds, throughput was %g values tested per second.\n", totalTime, throughput);
-  }
 
   //Decrypt the Zmessage with the ElGamal cyrptographic system
   ElGamalDecrypt(Zmessage,a,Nints,p,x);
