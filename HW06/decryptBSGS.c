@@ -54,27 +54,55 @@ int main (int argc, char **argv) {
 
   
     unsigned int M = sqrt(p); //giant step
-    keyValuePair *G = malloc(M*sizeof(keyValuePair)); //declaring and allocating memory for array
+    printf("M equals %u\n", M);
+    keyValuePair *G =  malloc((M+1)*sizeof(keyValuePair)); //declaring and allocating memory for array
+    printf("g equals %llu\n", g);
  
     for (unsigned int i=1; i<=M; i++) {
-      G[i].value = i;
-      G[i].key = g^i;
+     // printf("i equals %u\n", i);
+      G[i].key = i;
+     // printf("G[%u].key equals %u\n", i, G[i].key);
+      G[i].value = modExp(g, i, p);
+     printf("G[%u].value equals %llu\n", i, G[i].value); 
     }
 
     qsort(G, M, sizeof(keyValuePair), compareValue);
-
+    ulong alpha = modExp(g, M, p);
+   
+   //printf("alpha before equals %llu\n", alpha);
+   alpha = alpha^(-1);
+   // printf("alpha equals %llu\n", alpha);
   // find the secret key
-//  if (x==0 || modExp(g,x,p)!=h) {
-//    printf("Finding the secret key...\n");
-//    double startTime = clock();
-//    for (unsigned int i=0;i<p-1;i++) {
-//      if (modExp(g,i+1,p)==h) {
-//        printf("Secret key found! x = %u \n", i+1);
-//        x=i+1;
-//      } 
-//    }
-    printf("%u ---- %llu", G[1].key, G[1].value);
-    printf("%u ---- %llu", G[M].key, G[M].value);
+ // if (x==0 || modExp(g,x,p)!=h) {
+   // printf("Finding the secret key...\n");
+   // double startTime = clock();
+   // for (unsigned int i=0;i<p-1;i++) {
+     // if (modExp(g,i+1,p)==h) {
+       // printf("Secret key found! x = %u \n", i+1);
+       // x=i+1;
+     // } 
+   // }
+      ulong beta;
+      unsigned int j;
+      double startTime = clock();
+      for (unsigned int i = 0; i <= p/M; i++) {
+        ulong temp = h * alpha;
+        beta = modExp(temp, i, p);
+        //beta = (h*alpha)^i;
+        printf("Beta equals %llu\n", beta);
+        j =  binarySearch(G, M, beta);
+        if (j != 0) {
+           printf("i equals %u\n", i);
+           x = modprod(i,M,p);
+          // x = x + j;
+           break;       
+        }
+      }
+    printf("beta equals %llu at the end\n", beta);
+    printf("j equals %u\n", j);
+    printf("x equals %llu\n", x);
+   // x = x%p;
+   // printf("x equals %llu after mod\n", x);  
 
     double endTime = clock();
 
@@ -94,6 +122,7 @@ int main (int argc, char **argv) {
   free(message);
   free(Zmessage);
   free(a);
+  free(G);
 
   return 0;
 }
