@@ -3,12 +3,16 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
+#include <stdbool.h>
 
 #include "functions.c"
 #include "omp.h"
 
 
 int main (int argc, char **argv) {
+
+  int NumThreads = 24;
+  omp_set_num_threads(NumThreads);
 
   //declare storage for an ElGamal cryptosytem
   unsigned int n;
@@ -48,25 +52,46 @@ int main (int argc, char **argv) {
 
   ulong Nchars = charsPerInt*Nints;
   unsigned char *message = (unsigned char *) malloc(Nchars*sizeof(unsigned char));
-
+ 
   //get the secret key from the user
   printf("Enter the secret key (0 if unknown): "); fflush(stdout);
   char stat = scanf("%llu",&x);
 
   
   // find the secret key
-  if (x==0 || modExp(g,x,p)!=h) {
-    printf("Finding the secret key...\n");
-
-    unsigned int M; //giant step
+    unsigned int M = sqrt(p); //giant step
     
-    double startTime = clock();
-    for (unsigned int i=0;i<p-1;i++) {
-      if (modExp(g,i+1,p)==h) {
-        printf("Secret key found! x = %u \n", i+1);
-        x=i+1;
-      } 
+    keyValuePair *G = malloc((M+1)*sizeof(keyValuePair)); //declaring & allocating mem for G
+
+    for (unsigned int i = 1; i <= M; i++) {
+      G[i].key = i;
+      G[i].value = modExp(g, i, p);
     }
+    
+    qsort(G, M, sizeof(keyValuePair), compareValue);
+    
+    ulong a1 = modExp(g, M, p);
+    ulong alpha = modExp(a1, (p-2), p);
+
+    printf("Finding the secret key...\n"); 
+    double startTime = clock();
+    
+    ulong beta;
+    unsigned int j;
+    
+    volatile bool flag = false;
+    #pragma omp parallel for shared(flag)
+    for (unsigned int i = 0; i <= p/M; i++) {
+      ulong temp = modExp(alpha, i, p);
+      beta = modprod(h, temp, p);
+      j = binarySearch(G, M, beta);
+      if (j != 0) {
+        x = modprod(i, M, p);
+        x = x + j;
+        flag = true;
+      }
+    }
+
     double endTime = clock();
 
     double totalTime = (endTime-startTime)/CLOCKS_PER_SEC;
@@ -74,7 +99,6 @@ int main (int argc, char **argv) {
     double throughput = work/totalTime;
 
     printf("Searching all keys took %g seconds, throughput was %g values tested per second.\n", totalTime, throughput);
-  }
 
   //Decrypt the Zmessage with the ElGamal cyrptographic system
   ElGamalDecrypt(Zmessage,a,Nints,p,x);
