@@ -33,9 +33,37 @@ __device__ ulong d_modExp(ulong a, ulong b, ulong p) {
   return aExpb;
 }
 
-__global__ void findSecretKey(ulong p,ulong g, ulong h, ulong *x) {
+__device__ unsigned int d_binarySearch(keyValuePair* G, unsigned int M, ulong beta) {
+  
+  unsigned int low = 0;
+  unsigned int high = M-1;
 
+  while(1) {
+    if (low>=high) return 0;
 
+    unsigned int i = low + (high-low)/2;
+    if (G[i].value == beta) return G[i].key;
+
+    if (G[i].value < beta) 
+      low = i + 1;
+    else
+      high = i;
+  }
+}
+
+__global__ void findSecretKey(ulong p,ulong g, ulong h, ulong *x, ulong alpha, keyValuePair G) {
+
+  int threadid = threadIdx.x;
+  int blockid = blockIdx.x;
+  int Nblock = blockDim.x;
+  
+  ulong beta = d_modprod(h, d_modExp(alpha, id, p), p);
+  unsigned int id = threadid + blockid*Nblock;
+  x[id] = 0;
+
+  if (id < p) && (d_binarySearch(G, M, beta) !=0) {
+    x[id] = id*M + id;
+    printf("Found it: %llu\n",x[id]);  
 }
 
 
@@ -86,13 +114,30 @@ int main (int argc, char **argv) {
   char stat = scanf("%llu",&x);
 
   //use cuda to find the secret key
-  if (x==0 || modExp(g,x,p)!=h) {
-    unsigned int M; //giant step
+  if (x==0) {
+    unsigned int M = sqrt(p); //giant step
 
     ulong *d_x;
     cudaMalloc(&d_x,1*sizeof(ulong));
 
+    keyValuePair *d_G;
+    cudaMalloc(&d_G, (M+1)*sizeof(keyValuePair);
+
+    ulong *d_alpha;
+    cudaMalloc(&d_alpha, 1*sizeof(ulong));
+
+    keyValuePair *G = malloc((M+1)*sizeof(keyValuePair));
+
+    for *unsigned int i = 1; i <= M; i++) {
+      G[i].key = i;
+      G[i].value = d_modExp(g, i, p);
+
+    qsort(G, M, sizeof(keyValuePair), compareValue);    
+
     ulong alpha = modExp(modExp(g,M,p),p-2,p);
+
+    cudaMemcpy(&G, d_G, (M+1_*sizeof(keyValuePair), cudaMemcpyHostToDevice);
+    cudaMemcpy(&alpha, d_alpha, 1*sizeof(ulong), cudaMemcpyHostToDevice);
 
     int Nthreads = 256;
 
@@ -104,9 +149,8 @@ int main (int argc, char **argv) {
 
     printf("Finding the secret key...\n");
     double startTime = clock();
-    findSecretKey<<<G,B>>>(p,g,h,d_x);
+    findSecretKey<<<G,B>>>(p,g,h,d_x, d_alpha, d_G);
     cudaMemcpy(&x,d_x,1*sizeof(ulong),cudaMemcpyDeviceToHost);
-
     printf("Secret key x = %llu \n", x);
 
     double endTime = clock();
@@ -117,6 +161,8 @@ int main (int argc, char **argv) {
 
     printf("Searching all keys took %g seconds, throughput was %g values tested per second.\n", totalTime, throughput);
     cudaFree(d_x);
+    cudaFree(d_alpha);
+    cudaFree(d_G);
   }
 
   //Decrypt the Zmessage with the ElGamal cyrptographic system
